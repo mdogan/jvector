@@ -138,4 +138,43 @@ public class TestDeletions extends LuceneTestCase {
         assertEquals(0, graph.size());
         assertEquals(OnHeapGraphIndex.NO_ENTRY_POINT, graph.entry());
     }
+
+    @Test
+    public void testNotDisconnectingLiveNodes() {
+        int dimension = 2;
+        var ravv = MockVectorValues.fromValues(createRandomFloatVectors(4, dimension, getRandom()));
+        var builder = new GraphIndexBuilder(ravv, VectorSimilarityFunction.COSINE, 2, 10, 1.0f, 1.0f);
+        var graph = builder.getGraph();
+
+        var na0 = new NodeArray(dimension);
+        na0.addInOrder(1, 0.5f);
+        na0.addInOrder(2, 0.5f);
+        graph.addNode(0, na0);
+
+        var na1 = new NodeArray(dimension);
+        na1.addInOrder(0, 0.5f);
+        na1.addInOrder(2, 0.5f);
+        graph.addNode(1, na1);
+
+        var na2 = new NodeArray(dimension);
+        na2.addInOrder(0, 0.5f);
+        na2.addInOrder(1, 0.5f);
+        graph.addNode(2, na2);
+
+        var na3 = new NodeArray(dimension);
+        na3.addInOrder(0, 0.5f);
+        na3.addInOrder(2, 0.5f);
+        graph.addNode(3, na3);
+
+        graph.updateEntryNode(1);
+
+        builder.markNodeDeleted(0);
+        builder.markNodeDeleted(1);
+        builder.markNodeDeleted(2);
+
+        builder.removeDeletedNodes();
+
+        assertEquals(1, graph.size());
+        assertNotEquals(OnHeapGraphIndex.NO_ENTRY_POINT, graph.entry());
+    }
 }
